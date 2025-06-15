@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: akssecuredemoacr.azurecr.io/backend-app
-  tag: "v2"
+  tag: "v3"
   pullPolicy: IfNotPresent
 
 service:
