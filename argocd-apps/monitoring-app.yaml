@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-app
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+  source:
+    helm:
+      releaseName: monitoring
+      values: |
+        grafana:
+          adminPassword: "admin123"
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 72.7.0
+    chart: kube-prometheus-stack 

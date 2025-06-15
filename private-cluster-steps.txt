@@ -1,0 +1,53 @@
+Steps to Revert AKS Cluster to Private Configuration
+
+1. Update Terraform Configuration
+   - Edit infrastructure/main.tf:
+   - Set private_cluster_enabled = true
+   - Remove or update api_server_access_profile block
+   - Update authorized_ip_ranges to be more restrictive
+
+2. Apply Terraform Changes
+   ```bash
+   cd infrastructure/
+   terraform plan    # Review the changes
+   terraform apply   # Apply the changes
+   ```
+
+3. Update Azure CLI Configuration
+   ```bash
+   # Get the new private cluster credentials
+   az aks get-credentials --resource-group <resource-group-name> --name <cluster-name> --overwrite
+   ```
+
+4. Configure Private Access
+   - Set up Azure Bastion or a jumpbox VM in the same VNet
+   - OR use Azure Cloud Shell which has built-in private link access
+   - All kubectl commands must now be run from a machine with VNet access
+
+5. Verify Private Access
+   ```bash
+   # Test cluster access from authorized location
+   kubectl get nodes
+   
+   # Verify private cluster status
+   az aks show --resource-group <resource-group-name> --name <cluster-name> --query apiServerAccessProfile
+   ```
+
+6. Update Any CI/CD Pipelines
+   - Ensure CI/CD agents have VNet access to the cluster
+   - Update any external tools to use private endpoints
+
+7. Security Best Practices
+   - Review and update network security groups
+   - Ensure all required private endpoints are configured
+   - Document the private access requirements for team members
+
+8. Istio Configuration Note
+   - The Istio ingress gateway will still have a public IP (LoadBalancer)
+   - This is normal and desired - it allows external access to your applications
+   - Only the Kubernetes API server becomes private
+   - Verify Istio gateway is still accessible: kubectl get svc -n istio-system
+
+Note: After making these changes, the cluster's API server will only be accessible from within the VNet or through authorized private connections. Ensure you have proper access methods configured before applying changes to avoid getting locked out.
+
+Important: Keep these credentials and access methods secure and documented, as they are now your only way to access the cluster. 

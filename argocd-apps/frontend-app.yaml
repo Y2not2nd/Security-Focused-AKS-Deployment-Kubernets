@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-app
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  source:
+    helm:
+      releaseName: frontend
+    repoURL: https://github.com/Y2not2nd/aks-Deployment-Kubernets-SecurityFocused
+    targetRevision: main
+    path: helm-charts/frontend 
