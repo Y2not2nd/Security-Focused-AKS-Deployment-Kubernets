@@ -20,4 +20,7 @@ resources:
 hpa:
   enabled: true
   maxReplicas: 5
-  cpuTargetPercentage: 50 
+  cpuTargetPercentage: 50
+
+env:
+  DB_URI: "mongodb://root:<your-password>@mongodb:27017/mydb?authSource=admin"

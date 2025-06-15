@@ -24,14 +24,6 @@ spec:
         app: backend
       annotations:
         sidecar.istio.io/inject: "true"
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: backend-role
-        vault.hashicorp.com/agent-inject-secret-db-creds.txt: secret/data/db-creds
-        vault.hashicorp.com/agent-inject-template-db-creds.txt: |
-          {{`{{- with secret "secret/data/db-creds" -}}`}}
-          {{`{{ .Data.data.uri | trim }}`}}
-          {{`{{- end }}`}}
-        vault.hashicorp.com/agent-inject-perms-db-creds.txt: "0644"
     spec:
       serviceAccountName: default
       automountServiceAccountToken: true
@@ -42,6 +34,9 @@ spec:
           ports:
             - containerPort: 8080
               protocol: TCP
+          env:
+            - name: MONGO_URI
+              value: "mongodb://root:3Agc82DUHf@mongodb:27017/mydb?authSource=admin"
           resources:
             limits:
               cpu: 500m
@@ -49,14 +44,6 @@ spec:
             requests:
               cpu: 200m
               memory: 128Mi
-          volumeMounts:
-            - name: vault-secrets
-              mountPath: /vault/secrets
-              readOnly: true
-      volumes:
-        - name: vault-secrets
-          emptyDir:
-            medium: Memory
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
