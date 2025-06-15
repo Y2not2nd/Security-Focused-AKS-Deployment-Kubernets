@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: <ACR_NAME>.azurecr.io/backend-app
+  repository: akssecuredemoacr.azurecr.io/frontend-app:v1
   tag: "v1"
   pullPolicy: IfNotPresent
 
