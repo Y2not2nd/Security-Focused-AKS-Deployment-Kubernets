@@ -3,10 +3,11 @@ replicaCount: 2
 image:
   repository: akssecuredemoacr.azurecr.io/frontend-app
   tag: "v1"
-imagePullSecrets:
-  - name: acr-auth
   pullPolicy: IfNotPresent
 
+imagePullSecrets:
+  - name: acr-auth
+  
 service:
   type: ClusterIP
   port: 80 
