@@ -16,6 +16,8 @@ spec:
       annotations:
         sidecar.istio.io/inject: "true"
     spec:
+      imagePullSecrets:
+        - name: acr-auth
       containers:
       - name: frontend
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -28,4 +30,4 @@ spec:
       volumes:
       - name: nginx-config
         configMap:
-          name: frontend-nginx-config 
+          name: frontend-nginx-config
