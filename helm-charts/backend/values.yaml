@@ -1,8 +1,8 @@
 replicaCount: 2
 
 image:
-  repository: <ACR_NAME>.azurecr.io/backend
-  tag: "latest"
+  repository: <ACR_NAME>.azurecr.io/backend-app
+  tag: "v1"
   pullPolicy: IfNotPresent
 
 service:
