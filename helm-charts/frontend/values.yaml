@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: akssecuredemoacr.azurecr.io/frontend-app:v1
+  repository: akssecuredemoacr.azurecr.io/frontend-app
   tag: "v1"
   pullPolicy: IfNotPresent
 
