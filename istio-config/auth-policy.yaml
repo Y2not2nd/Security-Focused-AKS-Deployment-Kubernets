@@ -1,14 +1,35 @@
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: backend-access
+  name: aks-auth-policy
   namespace: istio-system
 spec:
   selector:
     matchLabels:
-      app: backend
+      app: istio-ingressgateway
   action: ALLOW
   rules:
   - from:
     - source:
-        principals: ["cluster.local/ns/default/sa/default"] 
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+    to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/*"]
+        # Add rate limiting
+        rateLimit:
+          requestsPerUnit: 100
+          unit: MINUTE
+    when:
+    - key: request.auth.claims[iss]
+      values: ["https://your-tenant.b2clogin.com/your-tenant.onmicrosoft.com/B2C_1_signupsignin1/v2.0/"]
+    - key: request.auth.claims[aud]
+      values: ["your-client-id"]
+    - key: request.auth.claims[exp]
+      notValues: ["0"]
+  # Deny all other traffic by default
+  - to:
+    - operation:
+        methods: ["*"]
+        paths: ["*"]
+    action: DENY 

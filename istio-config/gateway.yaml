@@ -3,6 +3,9 @@ kind: Gateway
 metadata:
   name: aks-gateway
   namespace: istio-system
+  annotations:
+    # Enable automatic mTLS
+    "sidecar.istio.io/inject": "true"
 spec:
   selector:
     istio: ingressgateway
@@ -12,4 +15,31 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "*" 
+    - "*.akssecuredemo.com"  # Replace with your actual domain
+    tls:
+      httpsRedirect: true  # Redirect HTTP to HTTPS
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - "*.akssecuredemo.com"  # Replace with your actual domain
+    tls:
+      mode: SIMPLE
+      credentialName: aks-tls-cert  # Reference to a Kubernetes secret containing TLS cert
+    # Add security headers
+    options:
+      gateway.istio.io/connection-pool: |
+        {
+          "http": {
+            "http1MaxPendingRequests": 1024,
+            "maxRequestsPerConnection": 10
+          }
+        }
+      gateway.istio.io/connection-timeout: "30s"
+      gateway.istio.io/retry: |
+        {
+          "attempts": 3,
+          "perTryTimeout": "2s",
+          "retryOn": "connect-failure,refused-stream,unavailable"
+        } 

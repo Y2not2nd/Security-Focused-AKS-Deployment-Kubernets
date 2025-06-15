@@ -1,6 +1,42 @@
-.terraform/
-
 # Terraform
+.terraform/
 *.tfstate
-*.tfstate.backup
-.terraform.lock.hcl
+*.tfstate.*
+*.tfvars
+.terraformrc
+terraform.rc
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+.kube/
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Misc
+*.bak
+*.tmp
+*~

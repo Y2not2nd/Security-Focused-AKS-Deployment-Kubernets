@@ -21,8 +21,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   name                = "${var.prefix}-aks"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  kubernetes_version  = "1.24.9"  # or latest available stable version
-  dns_prefix         = "${var.prefix}-aks"   # used for AKS DNS name
+  kubernetes_version  = "1.31.8"  # Updated to a supported version in uksouth region
+  dns_prefix         = "${var.prefix}-aks"
+  sku_tier           = "Free"     # Using Free tier since we're not using LTS
   
   # Configure public access to API server
   api_server_access_profile {
@@ -57,8 +58,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   private_cluster_enabled = false
 
   azure_active_directory_role_based_access_control {
-    admin_group_object_ids = [var.admin_group_object_id]
-    azure_rbac_enabled     = true
+    managed            = true
+    azure_rbac_enabled = true
   }
 
   local_account_disabled = true            # Keep Kubernetes admin user disabled, use Azure AD

@@ -1,11 +1,13 @@
 # Stage 1: Build the Go binary
 FROM golang:1.19-alpine AS builder
 WORKDIR /app
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+
+# Copy the entire source code
 COPY . .
-RUN CGO_ENABLED=0 go build -o backend .
+
+# Build with -mod=mod to force dependency download
+RUN go mod download && \
+    CGO_ENABLED=0 go build -mod=mod -o backend .
 
 # Stage 2: Create a lightweight image for running
 FROM gcr.io/distroless/base-debian11

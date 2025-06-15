@@ -17,6 +17,6 @@ spec:
   source:
     helm:
       releaseName: frontend
-    repoURL: https://github.com/Y2not2nd/aks-Deployment-Kubernets-SecurityFocused
+    repoURL: https://github.com/Y2not2nd/Security-Focused-AKS-Deployment-Kubernets
     targetRevision: main
     path: helm-charts/frontend 
