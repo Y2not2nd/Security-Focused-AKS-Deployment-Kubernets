@@ -25,13 +25,16 @@ spec:
       annotations:
         sidecar.istio.io/inject: "true"
         vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: backend-role
         vault.hashicorp.com/agent-inject-secret-db-creds.txt: secret/data/db-creds
         vault.hashicorp.com/agent-inject-template-db-creds.txt: |
-          {{- with secret "secret/db-creds" -}}
+          {{- with secret "secret/data/db-creds" -}}
           {{ .Data.data.uri }}
           {{- end }}
-        vault.hashicorp.com/role: backend-role
+        vault.hashicorp.com/agent-inject-perms-db-creds.txt: "0644"
     spec:
+      serviceAccountName: default
+      automountServiceAccountToken: true
       containers:
         - name: backend
           image: akssecuredemoacr.azurecr.io/backend-app:v1
@@ -46,6 +49,14 @@ spec:
             requests:
               cpu: 200m
               memory: 128Mi
+          volumeMounts:
+            - name: vault-secrets
+              mountPath: /vault/secrets
+              readOnly: true
+      volumes:
+        - name: vault-secrets
+          emptyDir:
+            medium: Memory
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30

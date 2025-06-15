@@ -1,0 +1,207 @@
+Vault Agent Secret Injection – MongoDB Auth
+Failure
+The backend pods were crashing because the MongoDB credentials file from Vault was not being
+delivered or formatted correctly. In Vault Agent Injector setups, a shared tmpfs volume ( /vault/
+secrets ) is mounted into each container, and annotations drive what secrets are fetched and how
+they are rendered into files . If the annotations or templates are wrong, the app will read an
+empty or malformed URI and fail to authenticate. In this case, the Vault sidecar appears to start (no
+Vault errors), but the backend logs show a MongoDB “unable to authenticate” error, indicating the
+injected credentials (username/password/URI) are incorrect or missing.
+Root Cause (summary): The Vault annotation(s) or templates are misconfigured, so the secret at
+secret/db-creds was never rendered as a usable MongoDB URI for the app. By default, Vault Agent
+will mount a tmpfs at /vault/secrets and, if agent-inject-secret-<name> is set, write the
+secret to a file named after <name> . However, without a custom template, the default output is
+a key/value listing – not a MongoDB URI string . Thus, the backend likely saw an empty or
+generic file. Possible contributing issues include using the wrong Vault path (e.g. omitting data/ for
+KV v2), forgetting .txt in the annotation key, missing the Vault “role” annotation, or file permission/
+timing problems.
+Verification Steps
+Check Vault annotations. Ensure the pod’s metadata has:
+vault.hashicorp.com/agent-inject: "true" .
+A role annotation bound to a Vault Kubernetes auth role (e.g. vault.hashicorp.com/role:
+"<vault-role>" ) – this is required for the agent to authenticate .
+An agent-inject-secret-<name> annotation pointing to the correct Vault path. For
+example:
+vault.hashicorp.com/agent-inject-secret-db-creds.txt: "secret/data/dbcreds"
+Here the key ends with .txt so the file will be /vault/secrets/db-creds.txt .
+(On KV-v2 secrets like the default “secret” mount, include data/ in the path, e.g. secret/
+data/db-creds .)
+If the Mongo URI must be assembled (username/password from Vault), include an agentinject-template-<name> annotation that constructs the URI. For example, using a Helm
+chart or raw YAML:
+vault.hashicorp.com/agent-inject-template-db-creds.txt: |
+{{- with secret "secret/data/db-creds" -}}
+mongodb+srv://{{ .Data.data.username }}:{{ .Data.data.password }}@my1 2
+1 2
+3 4
+1.
+2.
+3.
+2
+4.
+2 5
+5.
+1
+mongo.example.com/admin
+{{- end -}}
+This tells Vault Agent to render the file as a single connection string. Without a template, Vault
+Agent would use a generic template and emit:
+username: <user>
+password: <pass>
+which is not a usable URI .
+Describe the Pod. Run kubectl describe pod <backend-pod> . Under Volumes and
+Containers check that a vault-secrets volume (tmpfs) is mounted at /vault/secrets in
+your backend container . Also review any events or errors related to the Vault init/sidecar
+container. The annotation-driven mutating webhook should have injected an init container (to
+populate secrets) and a sidecar.
+Inspect the file in a crashing pod. Even though the pod is CrashLoopBackOff, you can still exec
+into it before it exits. For example:
+kubectl exec -it <pod-name> -n <ns> -c <backend-container> -- ls -l /
+vault/secrets
+kubectl exec -it <pod-name> -n <ns> -c <backend-container> -- cat /
+vault/secrets/db-creds.txt
+Verify that db-creds.txt exists and contains the expected MongoDB URI or JSON. If the file is
+missing or empty, the injector did not render it. If it contains key/value pairs instead of a URI
+(e.g. username: xyz ), add a template as above.
+Check Vault Agent logs. The init and sidecar containers are often named vault-agent-init
+and vault-agent or similar. Do kubectl logs <pod> -c vault-agent-init and
+kubectl logs <pod> -c vault-agent . Look for successful authentication to Vault, secret
+fetch logs, or any errors. If the sidecar is unable to reach Vault or can’t access the path, it should
+log errors. Also verify there are no TLS or token issues (e.g. if using Kubernetes auth, ensure the
+ServiceAccount token is mounted).
+File permissions. By default, the injected file may have restrictive permissions. You can set them
+explicitly with vault.hashicorp.com/agent-inject-perms-<name> . For example:
+vault.hashicorp.com/agent-inject-perms-db-creds.txt: "0644"
+This ensures the backend process (even if running as non-root) can read the file . Check with
+ls -l from inside the container to ensure the file’s mode permits reading.
+Pod startup ordering. Vault Agent normally uses an init container to pre-populate secrets
+before the app starts . Ensure vault.hashicorp.com/agent-pre-populate is not set to
+false (it defaults to true ). If you have other init containers, consider
+3 4
+6.
+1
+7.
+8.
+9.
+6
+10.
+7
+2
+vault.hashicorp.com/agent-init-first: "true" so the Vault init container runs first
+. In most cases the default init container behavior will ensure the file is present before your
+app begins. If your app still starts too early, you could add a simple readinessProbe (or a sleep)
+that waits for /vault/secrets/db-creds.txt to exist.
+Kubernetes 1.24+ ServiceAccount tokens. Modern k8s no longer auto-mount SA tokens by
+default. Ensure your Pod spec has automountServiceAccountToken: true so the Vault
+Agent can authenticate via the Kubernetes auth method . If the token isn’t available, Vault
+login will fail silently (no secret).
+Common Fixes / Best Practices
+Use correct annotation format. Follow HashiCorp’s examples: for each secret, use
+vault.hashicorp.com/agent-inject-secret-<name> where <name> becomes the
+filename under /vault/secrets . To get a .txt extension, include it in <name> as
+shown in the docs . Always include vault.hashicorp.com/role: <vault-role> so the
+agent can auth to Vault . For example:
+metadata:
+annotations:
+vault.hashicorp.com/agent-inject: "true"
+vault.hashicorp.com/role: "backend-app-role"
+vault.hashicorp.com/agent-inject-secret-db-creds.txt: "secret/data/
+db-creds"
+Render a single URI with a template. If your MongoDB secret in Vault has separate
+username and password fields (as from the DB secrets engine), define agent-injecttemplate to format them. Otherwise the default output is multi-line JSON or key:value which
+your app won’t parse. The Vault docs give an example for PostgreSQL; similarly for MongoDB
+you might do:
+vault.hashicorp.com/agent-inject-template-db-creds.txt: |
+{{- with secret "secret/data/db-creds" -}}
+mongodb://{{ .Data.data.username }}:{{ .Data.data.password }}@mongosvc.default.svc.cluster.local:27017/admin
+{{- end -}}
+This ensures /vault/secrets/db-creds.txt contains just the Mongo connection string .
+Volume and permissions. You do not need to manually declare a volume in your Deployment –
+the injector adds a tmpfs mounted at /vault/secrets in all containers . But you do need
+to ensure your container can read it. Use vault.hashicorp.com/agent-inject-perms-
+<name> if needed . For example, to allow non-root reads:
+vault.hashicorp.com/agent-inject-perms-db-creds.txt: "0644"
+8
+11.
+9
+•
+2
+5
+2
+•
+10
+•
+1
+6
+3
+Init container and timing. By default Vault Agent creates an init container that writes secrets
+before your app starts . Don’t disable this
+( vault.hashicorp.com/agent-pre-populate: false ) unless you know what you’re doing.
+If you have other init containers, ensure the Vault init runs first with vault.hashicorp.com/
+agent-init-first: "true" , so secrets are ready. This avoids race conditions where your
+app starts with no file.
+ServiceAccount and Vault role. Verify that the Pod’s service account is bound to a Vault role
+that has policy access to secret/db-creds . Vault’s Kubernetes auth setup is required; without
+it the injector can’t get a token. The Vault docs note that the SA must be allowed via a Kubernetes
+role binding and Vault role . Check Vault audit logs or the injector logs to ensure login
+succeeded.
+Example Deployment Snippet
+Below is an example fragment of a Deployment YAML with the recommended annotations and fixes.
+Adjust <VaultRole> , Vault paths, and Mongo URI details to match your setup. Note
+automountServiceAccountToken: true in the pod spec (required for k8s 1.24+):
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: backend
+spec:
+replicas: 3
+selector: { matchLabels: { app: backend } }
+template:
+metadata:
+labels:
+app: backend
+annotations:
+vault.hashicorp.com/agent-inject: "true"
+vault.hashicorp.com/role: "<VaultRole>"
+vault.hashicorp.com/agent-inject-secret-db-creds.txt: "secret/data/
+db-creds"
+vault.hashicorp.com/agent-inject-template-db-creds.txt: |
+{{- with secret "secret/data/db-creds" -}}
+mongodb://{{ .Data.data.username }}:{{ .Data.data.password }}
+@mongo.default.svc.cluster.local:27017/admin
+{{- end -}}
+vault.hashicorp.com/agent-inject-perms-db-creds.txt: "0644"
+spec:
+serviceAccountName: backend-sa
+automountServiceAccountToken: true
+containers:
+- name: backend
+image: my-backend-image:latest
+# No need to declare volume mounts; the injector mounts /vault/
+•
+7
+8
+•
+11
+4
+secrets automatically
+# The app should read /vault/secrets/db-creds.txt for the URI
+After applying these changes, redeploy and check that each pod’s /vault/secrets/db-creds.txt
+contains the correct Mongo URI (for example by kubectl exec into a running pod). The backend
+should then successfully connect to MongoDB.
+References: Official Vault docs describe the agent injector annotations and templating (see Vault Agent
+Injector annotations ). In particular, note the required agent-inject-secret format and how
+a custom agent-inject-template can produce a one-line URI . Additional Vault
+documentation explains the init-container behavior and file permission annotations .
+Vault Agent Injector | Vault | HashiCorp Developer
+https://developer.hashicorp.com/vault/docs/deploy/kubernetes/injector
+Vault Agent Injector annotations | Vault | HashiCorp Developer
+https://developer.hashicorp.com/vault/docs/deploy/kubernetes/injector/annotations
+Inject secrets with Vault-agent-injector - evoila GmbH
+https://evoila.com/blog/inject-secrets-with-vault-agent-injector/
+2 3
+2 10
+7 6
+1 2 3 4 5 10 11
+6 7 8
+9
+5
