@@ -1,3 +1,39 @@
+---
+# Source: backend/templates/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-mongodb
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  policyTypes: ["Ingress"]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+---
+# Source: backend/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: backend
+---
+# Source: backend/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -28,9 +64,9 @@ spec:
         vault.hashicorp.com/role: backend-role
         vault.hashicorp.com/agent-inject-secret-db-creds.txt: secret/data/db-creds
         vault.hashicorp.com/agent-inject-template-db-creds.txt: |
-          {{`{{- with secret "secret/data/db-creds" -}}`}}
-          {{`{{ .Data.data.uri }}`}}
-          {{`{{- end }}`}}
+          {{- with secret "secret/data/db-creds" -}}
+          {{ .Data.data.uri }}
+          {{- end }}
         vault.hashicorp.com/agent-inject-perms-db-creds.txt: "0644"
     spec:
       serviceAccountName: default
@@ -49,8 +85,38 @@ spec:
             requests:
               cpu: 200m
               memory: 128Mi
+          volumeMounts:
+            - name: vault-secrets
+              mountPath: /vault/secrets
+              readOnly: true
+      volumes:
+        - name: vault-secrets
+          emptyDir:
+            medium: Memory
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       securityContext: {}
       schedulerName: default-scheduler
+---
+# Source: backend/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  labels:
+    app: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
