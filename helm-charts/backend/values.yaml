@@ -19,8 +19,13 @@ resources:
 
 hpa:
   enabled: true
+  minReplicas: 1
   maxReplicas: 5
   cpuTargetPercentage: 50
 
 env:
-  DB_URI: "mongodb://root:<your-password>@mongodb:27017/mydb?authSource=admin"
+  - name: MONGO_URI
+    valueFrom:
+      secretKeyRef:
+        name: mongodb-credentials
+        key: connectionString

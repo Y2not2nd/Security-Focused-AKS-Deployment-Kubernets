@@ -8,7 +8,7 @@ metadata:
   annotations:
     argocd.argoproj.io/tracking-id: backend-app:apps/Deployment:default/backend
 spec:
-  replicas: 2
+  replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -29,21 +29,19 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: backend
-          image: akssecuredemoacr.azurecr.io/backend-app:v3
-          imagePullPolicy: IfNotPresent
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 8080
               protocol: TCP
+{{- if .Values.env }}
           env:
-            - name: MONGO_URI
-              value: "mongodb://root:3Agc82DUHf@mongodb:27017/mydb?authSource=admin"
+{{ tpl (toYaml .Values.env) . | indent 12 }}
+{{- end }}
+{{- with .Values.resources }}
           resources:
-            limits:
-              cpu: 500m
-              memory: 256Mi
-            requests:
-              cpu: 200m
-              memory: 128Mi
+{{ toYaml . | indent 12 }}
+{{- end }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30

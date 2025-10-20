@@ -1,0 +1,37 @@
+replicaCount: 1
+
+image:
+  repository: mongo
+  tag: "6.0.5"
+  pullPolicy: IfNotPresent
+
+fullnameOverride: mongodb
+
+service:
+  type: ClusterIP
+  port: 27017
+
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 8Gi
+  storageClassName: ""
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+auth:
+  enabled: true
+  rootUsername: root
+  rootPassword: 3Agc82DUHf
+  database: mydb
+
+metrics:
+  enabled: true
+  port: 9216
