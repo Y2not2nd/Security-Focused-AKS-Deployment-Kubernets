@@ -1,3 +1,4 @@
+{{- if .Values.hpa.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -9,7 +10,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: backend
-  minReplicas: 1
+  minReplicas: {{ .Values.hpa.minReplicas | default .Values.replicaCount }}
   maxReplicas: {{ .Values.hpa.maxReplicas }}
   metrics:
   - type: Resource
@@ -17,4 +18,5 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: {{ .Values.hpa.cpuTargetPercentage }} 
+        averageUtilization: {{ .Values.hpa.cpuTargetPercentage }}
+{{- end }}
