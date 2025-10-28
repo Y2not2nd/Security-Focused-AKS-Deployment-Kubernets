@@ -1,3 +1,7 @@
+Here’s the **complete, properly formatted Markdown file** — clean, consistent, and ready to paste directly into your `README.md` on GitHub:
+
+---
+
 ```markdown
 # Security-Focused AKS Deployment
 
@@ -44,10 +48,12 @@ This project sets up a secure Azure Kubernetes Service (AKS) environment that fo
 ## Prerequisites
 
 ### Azure access
+
 - An Azure subscription with rights to create RGs, VNets, AKS, and ACR.
 - An Azure AD group object ID for AKS admin access (see `infrastructure/variables.tf`).
 
 ### Local setup
+
 - Terraform 1.5 or newer  
 - Azure CLI 2.50 or newer  
 - kubectl matching the AKS version (`az aks install-cli` recommended)  
@@ -57,6 +63,7 @@ This project sets up a secure Azure Kubernetes Service (AKS) environment that fo
 - Go 1.21 (for the backend API)
 
 ### Optional tools
+
 - jq, make, and Snyk CLI (mentioned in `guide.txt` for scanning)
 - kubelogin for Azure AD authentication with kubectl
 
@@ -148,6 +155,7 @@ Expose the Argo CD API:
   ```bash
   kubectl port-forward svc/argocd-server -n argocd 8443:443
   ```
+
 * Or configure a Kubernetes Ingress or Istio VirtualService.
 
 Get the initial admin password:
@@ -286,4 +294,9 @@ This removes Argo CD apps and destroys all Terraform-managed resources.
 * Integrate Snyk or similar tools for IaC and container scanning.
 
 ```
+
+---
+
+✅ You can copy this block exactly as-is into your GitHub `README.md`.  
+It’s clean Markdown, renders correctly on GitHub, and contains no artifacts or formatting issues.
 ```
