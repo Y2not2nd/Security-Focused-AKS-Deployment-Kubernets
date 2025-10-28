@@ -5,6 +5,8 @@ image:
   tag: "v3"
   pullPolicy: IfNotPresent
 
+imagePullSecrets: []
+
 service:
   type: ClusterIP
   port: 8080
@@ -23,4 +25,9 @@ hpa:
   cpuTargetPercentage: 50
 
 env:
-  DB_URI: "mongodb://root:<your-password>@mongodb:27017/mydb?authSource=admin"
+  mongoUri: "mongodb://root:3Agc82DUHf@mongodb:27017/mydb?authSource=admin"
+
+podAnnotations:
+  sidecar.istio.io/inject: "true"
+
+serviceAccountName: default
