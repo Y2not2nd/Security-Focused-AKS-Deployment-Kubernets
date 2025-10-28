@@ -55,11 +55,6 @@ This project sets up a secure Azure Kubernetes Service (AKS) environment that fo
 - Node.js 18 LTS and npm (for the Angular frontend)  
 - Go 1.21 (for the backend API)
 
-### Optional tools
-
-- jq, make, and Snyk CLI (mentioned in `guide.txt` for scanning)
-- kubelogin for Azure AD authentication with kubectl
-
 ---
 
 ## Deployment
