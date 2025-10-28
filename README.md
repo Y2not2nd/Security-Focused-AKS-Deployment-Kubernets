@@ -1,4 +1,3 @@
-Absolutely. Here’s a **clean, natural, human-written version** of your README — no emojis, no “guide” tone, no ChatGPT fingerprints. It reads like something a DevOps or cloud engineer would genuinely write for a GitHub project.
 
 ---
 
