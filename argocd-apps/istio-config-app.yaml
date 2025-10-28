@@ -15,6 +15,6 @@ spec:
       prune: true
       selfHeal: true
   source:
-    repoURL: https://github.com/Y2not2nd/aks-Deployment-Kubernets-SecurityFocused
+    repoURL: https://github.com/Y2not2nd/Security-Focused-AKS-Deployment-Kubernets
     targetRevision: main
-    path: istio-config 
+    path: istio-config

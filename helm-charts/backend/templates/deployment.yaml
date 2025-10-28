@@ -8,7 +8,7 @@ metadata:
   annotations:
     argocd.argoproj.io/tracking-id: backend-app:apps/Deployment:default/backend
 spec:
-  replicas: 2
+  replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -22,28 +22,40 @@ spec:
     metadata:
       labels:
         app: backend
+{{- if .Values.podAnnotations }}
       annotations:
-        sidecar.istio.io/inject: "true"
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
     spec:
-      serviceAccountName: default
+      serviceAccountName: {{ .Values.serviceAccountName | default "default" }}
       automountServiceAccountToken: true
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{- range .Values.imagePullSecrets }}
+        - name: {{ . }}
+{{- end }}
+{{- end }}
       containers:
         - name: backend
-          image: akssecuredemoacr.azurecr.io/backend-app:v3
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 8080
               protocol: TCP
+{{- if or .Values.env.mongoUri .Values.env.extra }}
           env:
+{{- if .Values.env.mongoUri }}
             - name: MONGO_URI
-              value: "mongodb://root:3Agc82DUHf@mongodb:27017/mydb?authSource=admin"
+              value: "{{ .Values.env.mongoUri }}"
+{{- end }}
+{{- if .Values.env.extra }}
+{{ toYaml .Values.env.extra | indent 12 }}
+{{- end }}
+{{- end }}
+{{- if .Values.resources }}
           resources:
-            limits:
-              cpu: 500m
-              memory: 256Mi
-            requests:
-              cpu: 200m
-              memory: 128Mi
+{{ toYaml .Values.resources | indent 12 }}
+{{- end }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
