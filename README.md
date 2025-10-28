@@ -1,6 +1,3 @@
-
----
-
 ```markdown
 # Security-Focused AKS Deployment
 
@@ -289,8 +286,4 @@ This removes Argo CD apps and destroys all Terraform-managed resources.
 * Integrate Snyk or similar tools for IaC and container scanning.
 
 ```
-
----
-
-Would you like me to make it read a bit more like **a technical write-up by an engineer** (e.g., shorter sentences, slightly opinionated tone, fewer formal sections) so it feels more authentic in style for open-source repos?
 ```
