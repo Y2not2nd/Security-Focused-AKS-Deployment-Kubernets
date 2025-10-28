@@ -14,20 +14,20 @@ resource "azurerm_subnet" "aks" {
   name                = "${var.prefix}-aks-subnet"
   resource_group_name = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes    = ["10.50.0.0/22"]  # Subnet for AKS nodes (and pods, since using Azure CNI)
+  address_prefixes    = ["10.50.0.0/22"]  
 }
 
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "${var.prefix}-aks"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  kubernetes_version  = "1.31.8"  # Updated to a supported version in uksouth region
+  kubernetes_version  = "1.31.8" 
   dns_prefix         = "${var.prefix}-aks"
-  sku_tier           = "Free"     # Using Free tier since we're not using LTS
+  sku_tier           = "Free"    
   
   # Configure public access to API server
   api_server_access_profile {
-    authorized_ip_ranges = ["0.0.0.0/0"]  # Allow access from any IP (for demo purposes)
+    authorized_ip_ranges = ["0.0.0.0/0"]  
   }
 
   default_node_pool {
@@ -42,16 +42,16 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   identity {
-    type = "SystemAssigned"  # use a managed identity for the AKS control plane
+    type = "SystemAssigned"  
   }
 
   network_profile {
     network_plugin     = "azure"   # Azure CNI (pods get VNet IPs)
     network_policy     = "azure"   # enable Azure network policies (or "calico")
     load_balancer_sku  = "standard"
-    service_cidr       = "10.0.0.0/16"       # Cluster IPs for services
-    dns_service_ip     = "10.0.0.10"         # DNS service IP within service CIDR
-    outbound_type      = "loadBalancer"      # Outbound traffic uses standard LB
+    service_cidr       = "10.0.0.0/16"       
+    dns_service_ip     = "10.0.0.10"         
+    outbound_type      = "loadBalancer"     
   }
 
   # Remove private cluster settings
@@ -62,8 +62,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     azure_rbac_enabled = true
   }
 
-  local_account_disabled = true            # Keep Kubernetes admin user disabled, use Azure AD
-
+  local_account_disabled = true            
   tags = {
     Environment = "Demo"
   }
@@ -74,7 +73,7 @@ resource "azurerm_container_registry" "acr" {
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                = "Standard"
-  admin_enabled      = false    # disable admin user, use AAD integration
+  admin_enabled      = false    
 }
 
 # Grant AKS permission to pull from ACR (AcrPull role)
